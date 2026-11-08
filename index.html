@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="icon-192.png">
+<title>Pulse Clock: Stopwatches and Timers</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Azeret+Mono:wght@400;600&display=swap">
+<style>
+:root{--bg:#fff;--panel:#fff;--ink:#000;--mute:#595959;--line:#d4d4d4;--accent:#000;--onaccent:#fff;--flash:#ff3b30;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--panel:#0c0c0c;--ink:#fff;--mute:#a3a3a3;--line:#303030;--accent:#fff;--onaccent:#000}}
+:root[data-theme="dark"]{--bg:#000;--panel:#0c0c0c;--ink:#fff;--mute:#a3a3a3;--line:#303030;--accent:#fff;--onaccent:#000}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:20px 14px 90px}
+main{width:100%;max-width:520px}
+h1{font-size:1.1rem;font-weight:800;margin:0;letter-spacing:-.01em}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px 16px;margin-bottom:14px}
+.time{font-family:"Azeret Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:clamp(2rem,10.5vw,3.2rem);font-weight:600;text-align:center;letter-spacing:-.03em;margin:4px 0 16px;overflow-wrap:anywhere}
+.time small{font-size:.55em;color:var(--mute)}
+.row{display:flex;gap:10px}
+.addrow{margin-bottom:14px}
+.btn{flex:1;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 1rem "Bricolage Grotesque",sans-serif;padding:13px;border-radius:12px;cursor:pointer}
+.btn.main{background:var(--accent);color:var(--onaccent);border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.tg{flex:none;padding:8px 14px;font-size:.9rem}
+.btn.stop{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:60;flex:none;padding:12px 22px;background:var(--panel)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.ihead{display:flex;gap:8px;margin-bottom:8px}
+.nm{flex:1;min-width:0;font:800 1rem "Bricolage Grotesque",sans-serif;background:transparent;color:var(--ink);border:1px solid transparent;border-radius:8px;padding:6px}
+.nm:hover,.nm:focus{border-color:var(--line)}
+.x{border:1px solid var(--line);background:transparent;color:var(--mute);border-radius:8px;width:36px;cursor:pointer;font-size:1rem}
+.setter{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--mute)}
+input[type=number],select{font:600 1.05rem "Azeret Mono",monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px;width:100%}
+.fl{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center;margin-top:14px;font-size:.92rem}
+.fl label{display:flex;gap:6px;align-items:center;white-space:nowrap}
+.fs{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.fs summary{font-weight:800;cursor:pointer;margin-bottom:4px}.fs .fl{margin-top:12px}
+.patrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.colors{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-size:.95rem}
+.sws{display:flex;gap:8px;flex-wrap:wrap}
+.sws button{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.sws button[aria-pressed="true"]{outline:3px solid var(--accent);outline-offset:2px}
+input[type=color]{width:44px;height:34px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer}
+.opts{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;font-size:.95rem}
+.opts label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.laps{list-style:none;margin:14px 0 0;padding:0;max-height:180px;overflow:auto;font-family:"Azeret Mono",monospace;font-size:.9rem}
+.laps li{display:flex;justify-content:space-between;gap:8px;padding:7px 2px;border-top:1px solid var(--line)}
+.laps li span:first-child{color:var(--mute)}
+#flash{position:fixed;inset:0;background:var(--flash);opacity:0;pointer-events:none;z-index:50}
+#flash.go{animation:fl .7s ease-out}
+@keyframes fl{0%{opacity:.92}100%{opacity:0}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div id="flash"></div>
+<button class="btn stop" id="stopbtn" hidden>Stop flashing</button>
+<main>
+<div class="top"><h1>Pulse Clock</h1><button class="btn tg" id="themebtn">Dark</button></div>
+<div class="row addrow"><button class="btn main" id="addsw">+ Stopwatch</button><button class="btn main" id="addtm">+ Timer</button></div>
+<div id="list"></div>
+
+</main>
+
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+var list=$("list"),items=[],nid=1,cnt={sw:0,tm:0},actx=null;
+var cols=["#ff3b30","#ff9500","#ffd60a","#34c759","#0a84ff","#bf5af2","#ffffff","#000000"];
+function pad(n,l){n=String(n);while(n.length<(l||2))n="0"+n;return n}
+function fmtSW(ms){var cs=Math.floor(ms/10)%100,s=Math.floor(ms/1000)%60,m=Math.floor(ms/60000)%60,h=Math.floor(ms/3600000);
+  return (h?pad(h)+":":"")+pad(m)+":"+pad(s)+"<small>."+pad(cs)+"</small>"}
+function plain(s){return s.replace(/<[^>]+>/g,"")}
+function fmtTM(ms){var t=Math.ceil(ms/1000),s=t%60,m=Math.floor(t/60)%60,h=Math.floor(t/3600);return pad(h)+":"+pad(m)+":"+pad(s)}
+function el(m){return m.base+(m.running?performance.now()-m.start:0)}
+function ivms(m){var v=parseFloat(m.ivv);if(!(v>0))v=1;return Math.max(100,v*m.ivu)}
+function resync(m){m.last=Math.floor(el(m)/ivms(m))}
+
+/* Sound, vibration, flash patterns (shared) */
+function primeAudio(){try{if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();if(actx.state==="suspended")actx.resume()}catch(e){}}
+function beep(d,it){if(!it.beep)return;
+  try{primeAudio();var o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;o.connect(g);g.connect(actx.destination);
+    g.gain.setValueAtTime(.2,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+d);o.start();o.stop(actx.currentTime+d)}catch(e){}}
+var timers=[];
+function stopPattern(){timers.forEach(clearTimeout);timers=[];$("stopbtn").hidden=true}
+function pulse(d,it){
+  var f=$("flash");f.style.background=it.col;f.style.animationDuration=d+"ms";f.classList.remove("go");void f.offsetWidth;f.classList.add("go");
+  beep(Math.min(.25,d/1000),it);
+  if(it.vib){try{if(window.Android&&Android.vibrate)Android.vibrate(Math.min(120,d));else if(navigator.vibrate)navigator.vibrate(Math.min(120,d))}catch(e){}}
+}
+function flash(it){
+  stopPattern();
+  var p=it.pat;
+  if(p==="single"){pulse(700,it);return}
+  var gap=p==="continuous"?260:320;
+  var n=p==="double"?2:p==="triple"?3:Math.max(1,Math.round((it.plen||3)*1000/gap));
+  for(var i=0;i<n;i++)(function(i){timers.push(setTimeout(function(){pulse(220,it)},i*gap))})(i);
+  if(p==="continuous"){$("stopbtn").hidden=false;timers.push(setTimeout(stopPattern,n*gap))}
+}
+function alarm(it){flash(it);if(it.pat!=="continuous"){setTimeout(function(){flash(it)},1600);setTimeout(function(){flash(it)},3200)}}
+$("stopbtn").onclick=stopPattern;
+
+/* Cards */
+function readTotal(it){var q=it.q,h=+q(".th").value||0,m=+q(".tmn").value||0,s=+q(".ts").value||0;return Math.max(0,((h*60+m)*60+s)*1000)}
+function draw(it){
+  it.q(".time").innerHTML=it.type==="sw"?fmtSW(el(it)):(it.done?"00:00:00":fmtTM(Math.max(0,it.total-el(it))));
+}
+function update(it){
+  var q=it.q;
+  q(".go").textContent=it.running?"Pause":(it.base>0&&!it.done?"Resume":"Start");
+  if(it.type==="sw")q(".lap").disabled=!it.running;
+  else q(".setter").style.display=(it.running||it.base>0)?"none":"grid";
+  draw(it);
+}
+function card(it){
+  var s=it.type==="sw",c=document.createElement("section");c.className="card item";
+  c.innerHTML='<div class="ihead"><input class="nm" aria-label="Name"><button class="x" aria-label="Delete">\u2715</button></div>'
+  +(s?'':'<div class="setter"><label class="f">Hours<input type="number" class="th" min="0" max="99" value="0" inputmode="numeric"></label><label class="f">Minutes<input type="number" class="tmn" min="0" max="59" value="5" inputmode="numeric"></label><label class="f">Seconds<input type="number" class="ts" min="0" max="59" value="0" inputmode="numeric"></label></div>')
+  +'<div class="time"></div><div class="row">'+(s?'<button class="btn lap">Lap</button>':'')+'<button class="btn main go">Start</button><button class="btn rs">Reset</button></div>'
+  +'<details class="fs"><summary>Flash settings</summary>'
+  +'<div class="fl"><label><input type="checkbox" class="fon" checked> Flash every</label><input type="number" class="fv" min="0.1" step="any" value="10" inputmode="decimal"><select class="fu"><option value="1000">seconds</option><option value="60000">minutes</option></select></div>'
+  +'<div class="patrow" style="margin-top:14px"><label class="f">Pattern<select class="fp"><option value="single">Single</option><option value="double">Double</option><option value="triple">Triple</option><option value="continuous">Continuous</option></select></label><label class="f flw" hidden>Length (seconds)<input type="number" class="fl2" min="1" max="60" value="3" inputmode="numeric"></label></div>'
+  +'<div class="colors"><span>Color</span><div class="sws"></div><input type="color" class="fc" value="#ff3b30" aria-label="Flash color"></div>'
+  +'<div class="opts"><label><input type="checkbox" class="fbeep"> Beep</label><label><input type="checkbox" class="fvib"> Vibrate</label></div>'
+  +'<button class="btn ft" style="width:100%">Test flash</button></details>'
+  +(s?'<ul class="laps"></ul>':'');
+  var q=function(k){return c.querySelector(k)};
+  it.q=q;
+  q(".nm").value=it.name;
+  q(".nm").oninput=function(){it.name=this.value};
+  q(".x").onclick=function(){items=items.filter(function(x){return x!==it});c.remove()};
+  q(".go").onclick=function(){
+    primeAudio();
+    if(it.running){it.base=el(it);it.running=false}
+    else{
+      if(!s){
+        if(it.done||it.base>=it.total){it.base=0;it.done=false}
+        if(it.base===0)it.total=readTotal(it);
+        if(it.total<=0)return;
+      }
+      it.start=performance.now();it.running=true;resync(it);
+    }
+    update(it);
+  };
+  q(".rs").onclick=function(){
+    it.running=false;it.base=0;it.last=0;it.done=false;it.laps=[];
+    if(s)q(".laps").innerHTML="";else it.total=readTotal(it);
+    update(it);
+  };
+  if(s){q(".lap").onclick=function(){
+    var t=el(it),prev=it.laps.length?it.laps[it.laps.length-1]:0;it.laps.push(t);
+    var li=document.createElement("li");
+    li.innerHTML="<span>Lap "+it.laps.length+"</span><span>+"+plain(fmtSW(t-prev))+"</span><span>"+plain(fmtSW(t))+"</span>";
+    q(".laps").insertBefore(li,q(".laps").firstChild);
+  }}
+  else{["th","tmn","ts"].forEach(function(k){q("."+k).oninput=function(){if(!it.running&&it.base===0){it.total=readTotal(it);it.done=false;update(it)}}})}
+  q(".fon").onchange=function(){it.fon=this.checked};
+  q(".fv").oninput=function(){it.ivv=this.value;resync(it)};
+  q(".fu").onchange=function(){it.ivu=+this.value;resync(it)};
+  q(".fp").onchange=function(){it.pat=this.value;q(".flw").hidden=this.value!=="continuous"};
+  q(".fl2").oninput=function(){it.plen=parseFloat(this.value)||3};
+  q(".fbeep").onchange=function(){it.beep=this.checked};
+  q(".fvib").onchange=function(){it.vib=this.checked};
+  q(".ft").onclick=function(){primeAudio();flash(it)};
+  var sw2=q(".sws");
+  cols.forEach(function(cl){var b=document.createElement("button");b.style.background=cl;b.setAttribute("aria-label","Color "+cl);b.dataset.c=cl;b.onclick=function(){setCol(cl)};sw2.appendChild(b)});
+  function setCol(cl){it.col=cl;q(".fc").value=cl;Array.prototype.forEach.call(sw2.children,function(b){b.setAttribute("aria-pressed",b.dataset.c===cl)})}
+  q(".fc").oninput=function(){setCol(this.value)};
+  setCol(it.col);
+  return c;
+}
+function add(type){
+  cnt[type]++;
+  var it={type:type,name:(type==="sw"?"Stopwatch ":"Timer ")+cnt[type],running:false,base:0,start:0,last:0,total:300000,done:false,fon:true,ivv:10,ivu:1000,laps:[],pat:"single",plen:3,col:"#ff3b30",beep:false,vib:false};
+  items.push(it);list.appendChild(card(it));update(it);
+}
+$("addsw").onclick=function(){add("sw")};
+$("addtm").onclick=function(){add("tm")};
+
+/* Tick */
+setInterval(function(){
+  items.forEach(function(it){
+    if(!it.running)return;
+    var e=el(it);
+    if(it.type==="tm"&&e>=it.total){it.running=false;it.base=it.total;it.done=true;alarm(it);update(it);return}
+    var idx=Math.floor(e/ivms(it));
+    if(idx>it.last){it.last=idx;if(it.fon)flash(it)}
+    draw(it);
+  });
+},40);
+
+
+/* Theme */
+var root=document.documentElement;
+function isDark(){var t=root.getAttribute("data-theme");return t?t==="dark":window.matchMedia("(prefers-color-scheme:dark)").matches}
+function themeLabel(){$("themebtn").textContent=isDark()?"Light":"Dark"}
+$("themebtn").onclick=function(){var n=isDark()?"light":"dark";root.setAttribute("data-theme",n);try{localStorage.setItem("pulse-theme",n)}catch(e){}themeLabel()};
+try{var th=localStorage.getItem("pulse-theme");if(th)root.setAttribute("data-theme",th)}catch(e){}
+themeLabel();
+
+add("sw");add("tm");
+})();
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(function(){})}</script>
+</body>
+</html>
